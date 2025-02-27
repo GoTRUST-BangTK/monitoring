@@ -1,0 +1,64 @@
+groups:
+  - name: Node Alerts
+    rules:
+      #? CPU
+      - alert: HighCPUUsage70
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100)) > 70
+        for: 2m
+        labels:
+          severity: warning
+          app_type: linux
+        annotations:
+          summary: "High CPU Usage ({{ $labels.instance }})"
+          description: "CPU usage on instance {{ $labels.instance }} has exceeded 70% for 2 minutes."
+
+      - alert: HighCPUUsage80
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100)) > 80
+        for: 2m
+        labels:
+          severity: critical
+          app_type: linux
+        annotations:
+          summary: "Critical CPU Usage ({{ $labels.instance }})"
+          description: "CPU usage on instance {{ $labels.instance }} has exceeded 80% for 2 minutes."
+
+      - alert: HighCPUUsage90
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100)) > 90
+        for: 1m
+        labels:
+          severity: emergency
+          app_type: linux
+        annotations:
+          summary: "Emergency CPU Usage ({{ $labels.instance }})"
+          description: "CPU usage on instance {{ $labels.instance }} has exceeded 90% for 1 minute. Immediate action required!"
+
+      #? RAM
+      - alert: HighRAMUsage70
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 70
+        for: 2m
+        labels:
+          severity: warning
+          app_type: linux
+        annotations:
+          summary: "High RAM Usage ({{ $labels.instance }})"
+          description: "RAM usage on instance {{ $labels.instance }} has exceeded 70% for 2 minutes."
+
+      - alert: HighRAMUsage80
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 80
+        for: 2m
+        labels:
+          severity: critical
+          app_type: linux
+        annotations:
+          summary: "Critical RAM Usage ({{ $labels.instance }})"
+          description: "RAM usage on instance {{ $labels.instance }} has exceeded 80% for 2 minutes."
+
+      - alert: HighRAMUsage90
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 90
+        for: 1m
+        labels:
+          severity: emergency
+          app_type: linux
+        annotations:
+          summary: "Emergency RAM Usage ({{ $labels.instance }})"
+          description: "RAM usage on instance {{ $labels.instance }} has exceeded 90% for 1 minute. Immediate action required!"

@@ -1,0 +1,34 @@
+global:
+    scrape_interval: 15s # By default, scrape targets every 15 seconds.
+    evaluation_interval: 15s # By default, scrape targets every 15 seconds.
+    external_labels:
+        monitor: 'my-project'
+
+rule_files:
+    - 'container-rules.yml'
+    - 'linux-rules.yml'
+    # - "first.rules"
+    # - "second.rules"
+alerting:
+    alertmanagers:
+        - static_configs:
+              - targets: ['alertmanager:9093']
+
+scrape_configs:
+    - job_name: 'prometheus'
+      scrape_interval: 5s
+      static_configs:
+          - targets: ['localhost:9090']
+
+    - job_name: 'cadvisor'
+      scrape_interval: 5s
+      static_configs:
+          - targets: ['cadvisor:8080']
+    # - job_name: 'dockerd-exporter'
+    #   scrape_interval: 5s
+    #   static_configs:
+    #       - targets: ['dockerd-exporter:9323']
+    - job_name: 'node-exporter'
+      dns_sd_configs:
+      static_configs:
+          - targets: ['node-exporter:9100']

@@ -1,0 +1,146 @@
+services:
+    prometheus:
+        image: bitnami/prometheus:3  #prom/prometheus:v2.45.6
+        networks:
+            - webapp
+        ports:
+            - target: 9090
+              published: 9090
+              mode: host
+        volumes:
+            # - prometheus_data:/opt/bitnami/prometheus/data
+            - ./prometheus/conf/:/opt/bitnami/prometheus/conf/
+        deploy:
+            mode: replicated
+            replicas: 1
+            placement:
+                constraints:
+                    - node.role == manager
+            resources:
+                limits:
+                    memory: 2048M
+                reservations:
+                    memory: 128M
+            restart_policy:
+                condition: on-failure
+                
+    alertmanager:
+        image: prom/alertmanager:v0.28.0
+        networks:
+            - webapp
+        ports:
+            - target: 9093
+              published: 9093
+              mode: host
+        volumes:
+            - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+        deploy:
+            placement:
+                constraints:
+                    - node.role==manager
+            restart_policy:
+                condition: on-failure
+
+    cadvisor:
+        image: gcr.io/cadvisor/cadvisor:v0.47.2
+        ports:
+            - target: 8080
+              published: 8088
+              mode: host
+        privileged: true
+        devices:
+            - /dev/kmsg
+        networks:
+            - webapp
+        volumes:
+            - /:/rootfs:ro
+            - /var/run:/var/run:ro
+            - /sys:/sys:ro
+            - /var/lib/docker/:/var/lib/docker:ro
+            - /dev/disk/:/dev/disk:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - /etc/machine-id:/etc/machine-id:ro
+            - /var/lib/dbus/machine-id:/var/lib/dbus/machine-id:ro
+        deploy:
+            mode: global
+            resources:
+                limits:
+                    memory: 128M
+                reservations:
+                    memory: 64M
+            restart_policy:
+                condition: on-failure
+
+    node-exporter:
+        image: bitnami/node-exporter:1.8.2 # prom/node-exporter:latest
+        networks:
+            - webapp
+        volumes:
+            - /sys:/host/sys:ro
+            - /:/rootfs:ro
+            - /proc:/host/proc:ro
+            - /etc/hostname:/etc/nodename
+        environment:
+            - NODE_ID={{.Node.ID}}
+        deploy:
+            mode: global
+        # environment:
+        #     - NODE_ID=malpsfhoor6jrrv4qseun0s01 #? swarm node
+        command:
+            - '--path.procfs=/host/proc'
+            - '--path.rootfs=/rootfs'
+            - '--path.sysfs=/host/sys'
+            - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+            - '--collector.textfile.directory=/home/'
+            - '--no-collector.ipvs'
+            
+    grafana:
+        # image: maverick0809/bitnami_grafana_11 #
+        image: bitnami/grafana:11 
+        networks:
+            - webapp
+        ports:
+            - target: 3000
+              published: 3003
+              mode: host
+        depends_on:
+            - prometheus
+        volumes:
+            # - grafana_data:/var/lib/grafana 
+            - ./grafana/provisioning/:/opt/bitnami/grafana/provisioning/
+        env_file:
+            - ./grafana/config.monitoring
+        deploy:
+            placement:
+                constraints:
+                    - node.role==manager
+            restart_policy:
+                condition: on-failure
+    dockerd-exporter:
+        image: stefanprodan/caddy
+        networks:
+            - webapp
+        environment:
+            DOCKER_GWBRIDGE_IP: '172.22.163.223'
+        extra_hosts:
+            - 'host.docker.internal:172.22.163.223'
+        configs:
+            - source: dockerd_config
+              target: /etc/caddy/Caddyfile
+        deploy:
+            mode: global
+            resources:
+                limits:
+                    memory: 128M
+                reservations:
+                    memory: 64M
+networks:
+    webapp:
+        driver: overlay
+        # driver: overlay
+        # external: true
+
+volumes:
+    dbdata: {}
+    prometheus_data: {}
+    grafana_data: {}

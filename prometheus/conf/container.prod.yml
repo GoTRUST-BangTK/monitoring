@@ -1,0 +1,228 @@
+groups:
+    - name: rules
+      rules:
+          - alert: service_down
+            expr: up == 0
+            for: 5m
+            labels:
+                severity: critical
+            annotations:
+                summary: 'Instance {{ $labels.instance }} down'
+                description: '{{ $labels.instance }} of job {{ $labels.job }} has been down right away.'
+          #@ Container ----------------------------------------------------
+          #? RAM
+          - alert: ModerateMemoryIncrease5M
+            expr: (
+                    ( container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}
+                    - avg_over_time(container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", container_label_com_docker_stack_namespace!~"monitoring"}[5m])
+                    )
+                    unless on(job, instance, id)
+                    (
+                    container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}
+                    - avg_over_time(container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}[5m])
+                    )
+                ) / 1024 / 1024 > 100
+            for: 0m
+            labels:
+                severity: warning
+                app_type: container
+            annotations:
+                summary: 'Container experiencing a sudden RAM increase'
+                description: 'Container {{ $labels.name }} has increased its RAM usage by more than 100MB in the last 5 minutes.'
+
+          - alert: RapidMemoryIncrease5M
+            expr: (
+                    ( container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}
+                    - avg_over_time(container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", container_label_com_docker_stack_namespace!~"monitoring"}[5m])
+                    )
+                    unless on(job, instance, id)
+                    (
+                    container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}
+                    - avg_over_time(container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}[5m])
+                    )
+                ) / 1024 / 1024 > 200
+            for: 0m
+            labels:
+                severity: warning
+                app_type: container
+            annotations:
+                summary: 'Container experiencing a sudden RAM increase'
+                description: 'Container {{ $labels.name }} has increased its RAM usage by more than 200MB in the last 5 minutes.'
+
+          - alert: ModerateMemoryIncrease1M
+            expr: (
+                    ( container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}
+                    - avg_over_time(container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", container_label_com_docker_stack_namespace!~"monitoring"}[1m])
+                    )
+                    unless on(job, instance, id)
+                    (
+                    container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}
+                    - avg_over_time(container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}[1m])
+                    )
+                ) / 1024 / 1024 > 100
+            for: 0m
+            labels:
+                severity: warning
+                app_type: container
+            annotations:
+                summary: 'Container experiencing a sudden RAM increase'
+                description: 'Container {{ $labels.name }} has increased its RAM usage by more than 100MB in the last 1 minutes.'
+
+          - alert: RapidMemoryIncrease1M
+            expr: (
+                    ( container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}
+                    - avg_over_time(container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", container_label_com_docker_stack_namespace!~"monitoring"}[1m])
+                    )
+                    unless on(job, instance, id)
+                    (
+                    container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}
+                    - avg_over_time(container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}[1m])
+                    )
+                ) / 1024 / 1024 > 200
+            for: 0m
+            labels:
+                severity: critical
+                app_type: container
+            annotations:
+                summary: 'Container experiencing a sudden RAM increase'
+                description: 'Container {{ $labels.name }} has increased its RAM usage by more than 200MB in the last 1 minutes.'
+
+          - alert: ContainerMemoryUsageAbove1GB
+            expr: (container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}
+                unless on(job, instance, id)
+                (
+                container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}
+                )) /1024 /1024 > 1024
+            for: 0m
+            labels:
+                severity: warning
+                app_type: container
+            annotations:
+                summary: 'Container uses RAM over 1GB'
+                description: 'Container {{ $labels.name }} is using RAM exceeded 1GB.'
+
+          - alert: ContainerMemoryUsageAbove2GB
+            expr: (container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}
+                unless on(job, instance, id)
+                (
+                container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}
+                )) /1024 /1024 > 2048
+            for: 0m
+            labels:
+                severity: critical
+                app_type: container
+            annotations:
+                summary: 'Container uses RAM over 2GB'
+                description: 'Container {{ $labels.name }} is using RAM exceeded 2GB.'
+
+          - alert: ContainerMemoryUsageAbove4GB
+            expr: (container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}
+                unless on(job, instance, id)
+                (
+                container_memory_usage_bytes{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", container_label_com_docker_stack_namespace!~"monitoring"}
+                )) /1024 /1024 > 4096
+            for: 0m
+            labels:
+                severity: emergency
+                app_type: container
+            annotations:
+                summary: 'Container uses RAM over 4GB'
+                description: 'Container {{ $labels.name }} is using RAM exceeded 4GB.'
+
+          #? CPU
+          - alert: RapidCPUIncrease5M
+            expr: ((
+                rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])
+                - avg_over_time(rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])[5m:])
+                )
+                unless on(job, instance, id)
+                (
+                rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])
+                - avg_over_time(rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])[5m:])
+                ))
+                * 1000  > 30
+            for: 5m
+            labels:
+                severity: warning
+                app_type: container
+            annotations:
+                summary: 'Container experiencing a sudden CPU increase'
+                description: 'Container {{ $labels.name }} has increased its CPU usage by more than 50 milliCPU (0.05 core) in the last 5 minutes.'
+
+          - alert: RapidCPUIncrease5M
+            expr: ((
+                rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])
+                - avg_over_time(rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])[5m:])
+                )
+                unless on(job, instance, id)
+                (
+                rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])
+                - avg_over_time(rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])[5m:])
+                ))
+                * 1000  > 50
+            for: 5m
+            labels:
+                severity: critical
+                app_type: container
+            annotations:
+                summary: 'Container experiencing a sudden CPU increase'
+                description: 'Container {{ $labels.name }} has increased its CPU usage by more than 100 milliCPU (0.1 core) in the last 5 minutes.'
+
+          - alert: RapidCPUIncrease1M
+            expr: ((
+                rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])
+                - avg_over_time(rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])[1m:])
+                )
+                unless on(job, instance, id)
+                (
+                rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])
+                - avg_over_time(rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])[1m:])
+                ))
+                * 1000  > 30
+            for: 1m
+            labels:
+                severity: critical
+                app_type: container
+            annotations:
+                summary: 'Container experiencing a sudden CPU increase'
+                description: 'Container {{ $labels.name }} has increased its CPU usage by more than 50 milliCPU (0.05 core) in the last 5 minutes.'
+
+          - alert: RapidCPUIncrease1M
+            expr: ((
+                rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])
+                - avg_over_time(rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])[1m:])
+                )
+                unless on(job, instance, id)
+                (
+                rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])
+                - avg_over_time(rate(container_cpu_usage_seconds_total{job="cadvisor", instance="cadvisor:8080", id=~"^(/docker|/|/system.slice|/system.*)$", name=~".+", container_label_com_docker_stack_namespace!~"monitoring"}[2m])[1m:])
+                ))
+                * 1000  > 50
+            for: 5m
+            labels:
+                severity: critical
+                app_type: container
+            annotations:
+                summary: 'Container experiencing a sudden CPU increase'
+                description: 'Container {{ $labels.name }} has increased its CPU usage by more than 100 milliCPU (0.1 core) in the last 5 minutes.'
+                
+        #? Container status
+          - alert: ContainerDown
+            expr: absent(container_memory_usage_bytes)
+            for: 5m
+            labels:
+                severity: critical
+                app_type: container
+            annotations:
+                summary: 'Container down'
+                description: 'Container {{ $labels.name }} has not sent any metrics for over 5 minutes.'
+
+          - alert: ContainerFrequentRestarts
+            expr: increase(container_restart_count[5m]) > 3
+            for: 5m
+            labels:
+                severity: critical
+                app_type: container
+            annotations:
+                summary: 'Container frequent restarts'
+                description: 'Container {{ $labels.name }} has restarted more than 3 times in the last 5 minutes.'

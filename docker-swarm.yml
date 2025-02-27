@@ -1,0 +1,152 @@
+version: '3.8'
+services:
+    prometheus:
+        image: bitnami/prometheus:3  #prom/prometheus:v2.45.6
+        networks:
+            - webapp
+        ports:
+            - target: 9090
+              published: 9090
+              mode: host
+        configs:
+            - source: container-rules.yml
+              target: /opt/bitnami/prometheus/conf/container-rules.yml
+            #   mode: 0750
+            - source: prometheus.yml
+              target: /opt/bitnami/prometheus/conf/prometheus.yml
+            #   mode: 0750
+            - source: linux-rules.yml
+              target: /opt/bitnami/prometheus/conf/linux-rules.yml
+            #   mode: 0750
+        volumes:
+            - 'prometheus_data:/prometheus'
+        deploy:
+            mode: replicated
+            replicas: 1
+            placement:
+                constraints:
+                    - node.role == manager
+            resources:
+                limits:
+                    memory: 2048M
+                reservations:
+                    memory: 128M
+            restart_policy:
+                condition: on-failure
+                
+    alertmanager:
+        image: prom/alertmanager:v0.28.0
+        networks:
+            - webapp
+        ports:
+            - target: 9093
+              published: 9093
+              mode: host
+        configs:
+            - source: alertmanager.yml
+              target: /etc/alertmanager/alertmanager.yml
+            #   mode: 0750
+        deploy:
+            placement:
+                constraints:
+                    - node.role==manager
+            restart_policy:
+                condition: on-failure
+
+    cadvisor:
+        image: gcr.io/cadvisor/cadvisor:v0.47.2
+        ports:
+            - target: 8080
+              published: 8088
+              mode: host
+        privileged: true
+        # devices:
+        #     - /dev/kmsg
+        devices:
+            - "/dev/kmsg:/dev/kmsg"
+        command:
+            - "--housekeeping_interval=30s" 
+            - "--max_housekeeping_interval=60s"
+        networks:
+            - webapp
+        volumes:
+            - /:/rootfs:ro
+            - /var/run:/var/run:ro
+            - /sys:/sys:ro
+            - /var/lib/docker/:/var/lib/docker:ro
+            - /dev/disk/:/dev/disk:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - /etc/machine-id:/etc/machine-id:ro
+            - /var/lib/dbus/machine-id:/var/lib/dbus/machine-id:ro
+        deploy:
+            mode: global
+            resources:
+                limits:
+                    memory: 128M
+                reservations:
+                    memory: 64M
+            restart_policy:
+                condition: on-failure
+
+    node-exporter:
+        image: bitnami/node-exporter:1.8.2 
+        networks:
+            - webapp
+        volumes:
+            - /sys:/host/sys:ro
+            - /:/rootfs:ro
+            - /proc:/host/proc:ro
+            - /etc/hostname:/etc/nodename
+        environment:
+            - NODE_ID={{.Node.ID}}
+        deploy:
+            mode: global
+        # environment:
+        #     - NODE_ID=malpsfhoor6jrrv4qseun0s01 #? swarm node
+        command:
+            - '--path.procfs=/host/proc'
+            - '--path.rootfs=/rootfs'
+            - '--path.sysfs=/host/sys'
+            - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+            - '--collector.textfile.directory=/home/'
+            - '--no-collector.ipvs'
+            
+    grafana:
+        image: bitnami/grafana:11 
+        networks:
+            - webapp
+        ports:
+            - target: 3000
+              published: 3003
+              mode: host
+        depends_on:
+            - prometheus
+        environment:
+            GF_SECURITY_ADMIN_PASSWORD: 'admin'
+            GF_USERS_ALLOW_SIGN_UP: 'true'
+        volumes:
+            # - 'grafana_data:/var/lib/grafana'
+            - 'grafana_data:/opt/bitnami/grafana/data'
+        deploy:
+            placement:
+                constraints:
+                    - node.role==manager
+            restart_policy:
+                condition: on-failure
+networks:
+    webapp:
+        driver: overlay
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
+configs:
+  container-rules.yml:
+    external: true
+  prometheus.yml:
+    external: true
+  linux-rules.yml:
+    external: true
+  alertmanager.yml:
+    external: true
