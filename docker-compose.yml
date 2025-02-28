@@ -101,13 +101,13 @@ services:
             - webapp
         ports:
             - target: 3000
-              published: 3003
+              published: 3000
               mode: host
         depends_on:
             - prometheus
         volumes:
             # - grafana_data:/var/lib/grafana 
-            - ./grafana/provisioning/:/opt/bitnami/grafana/provisioning/
+            - ./grafana/conf/provisioning/:/opt/bitnami/grafana/provisioning/
         env_file:
             - ./grafana/config.monitoring
         deploy:

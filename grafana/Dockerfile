@@ -8,7 +8,7 @@ USER root
 #     useradd -u 1001 -g grafana -m -d ${CONFIG_DIR} -s /bin/bash grafana && \
 #     chgrp 0 ${CONFIG_DIR} 
 
-COPY config/* /opt/bitnami/grafana/provisioning/
+COPY conf/* /opt/bitnami/grafana/provisioning/
 
 RUN chown 1001:1001 ${grafana_DIR} -R 
 # && chown 1001:1001 /var/lib/grafana

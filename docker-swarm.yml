@@ -11,13 +11,10 @@ services:
         configs:
             - source: container-rules.yml
               target: /opt/bitnami/prometheus/conf/container-rules.yml
-            #   mode: 0750
             - source: prometheus.yml
               target: /opt/bitnami/prometheus/conf/prometheus.yml
-            #   mode: 0750
             - source: linux-rules.yml
               target: /opt/bitnami/prometheus/conf/linux-rules.yml
-            #   mode: 0750
         volumes:
             - 'prometheus_data:/prometheus'
         deploy:
@@ -101,8 +98,6 @@ services:
             - NODE_ID={{.Node.ID}}
         deploy:
             mode: global
-        # environment:
-        #     - NODE_ID=malpsfhoor6jrrv4qseun0s01 #? swarm node
         command:
             - '--path.procfs=/host/proc'
             - '--path.rootfs=/rootfs'
@@ -117,7 +112,7 @@ services:
             - webapp
         ports:
             - target: 3000
-              published: 3003
+              published: 3000
               mode: host
         depends_on:
             - prometheus
@@ -125,7 +120,6 @@ services:
             GF_SECURITY_ADMIN_PASSWORD: 'admin'
             GF_USERS_ALLOW_SIGN_UP: 'true'
         volumes:
-            # - 'grafana_data:/var/lib/grafana'
             - 'grafana_data:/opt/bitnami/grafana/data'
         deploy:
             placement:
